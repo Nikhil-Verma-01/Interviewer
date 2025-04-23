@@ -3,7 +3,10 @@ import React from 'react'
 
 const page = () => {
   return (
-    <AuthForm type="sign-up"/>
+    <div>
+      <AuthForm type="sign-up"/>
+    </div>
+    
   )
 }
 
