@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation"
 import { auth } from "@/firebase/client"
 import { signIn, signUp } from "@/lib/constant/auth.action"
 import {createUserWithEmailAndPassword, signInWithEmailAndPassword} from 'firebase/auth'
+import { useState } from "react";
 
 
 const authFormSchema = (type: FormType) => {
@@ -40,61 +41,67 @@ const AuthForm = ({type}: {type: FormType}) => {
         password: "",
         },
     });
+
+    const [isLoading, setIsLoading] = useState(false);
  
   // 2. Define a submit handler.
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    
     try {
-        if(type === 'sign-up'){
-            const {name, email, password} = values;
-
-            const userCredentials = await createUserWithEmailAndPassword(
-                auth,
-                email,
-                password
-            );
-
-            const result = await signUp({
-                uid: userCredentials.user.uid,
-                name: name!,
-                email,
-                password,
-            });
-
-            if(!result?.succes){
-                toast.error(result?.message);
-                return;
-            }
-             
-            toast.success('Account created successfully. Please Sign in.');
-            router.push('/sign-in');
-
-        } else {
-            const {email, password} = values;
-
-            const userCredentials = await signInWithEmailAndPassword(
-                auth,
-                email,
-                password
-            );
-
-            const idToken = await userCredentials.user.getIdToken();
-
-            if(!idToken){
-                toast.error('Sign in failed. Please try again')
-                return;
-            }
-            
-            await signIn({
-                email, idToken,
-            });
-            
-            toast.success('Sign in successfully.');
-            router.push('/');
+      setIsLoading(true);
+  
+      if (type === 'sign-up') {
+        const { name, email, password } = values;
+  
+        const userCredentials = await createUserWithEmailAndPassword(auth, email, password);
+  
+        const result = await signUp({
+          uid: userCredentials.user.uid,
+          name: name!,
+          email,
+          password,
+        });
+  
+        if (!result?.succes) {
+          toast.error(result?.message);
+          setIsLoading(false);
+          return;
         }
+  
+        toast.success('Account created successfully. Please Sign in.');
         
+        // ✅ Wait a little so toast can appear
+        await new Promise(resolve => setTimeout(resolve, 150));
+        
+        router.replace('/sign-in');  // 🧠 replace() better than push()
+        
+      } else {
+        const { email, password } = values;
+  
+        const userCredentials = await signInWithEmailAndPassword(auth, email, password);
+  
+        const idToken = await userCredentials.user.getIdToken();
+  
+        if (!idToken) {
+          toast.error('Sign in failed. Please try again');
+          setIsLoading(false);
+          return;
+        }
+  
+        await signIn({ email, idToken });
+  
+        toast.success('Sign in successfully.');
+  
+        // ✅ Wait a little so toast can appear
+        await new Promise(resolve => setTimeout(resolve, 150));
+        
+        router.replace('/');  // 🧠 use replace
+      }
     } catch (error) {
-        console.log(error);
-        toast.error(`There was an error: ${error}`)
+      console.log(error);
+      toast.error(`There was an error: ${error}`);
+    } finally {
+      setIsLoading(false);
     }
   }
 
