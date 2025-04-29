@@ -31,8 +31,9 @@ const Agent = ({userName}: AgentProps) => {
                     {isSpeaking && <span className='animate-speak'/>} 
 
                 </div>
-                        
+                
                 <h3>AI Interviewer</h3>
+                        
             </div>
 
             <div className='card-border'>
