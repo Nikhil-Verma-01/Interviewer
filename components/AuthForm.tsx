@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import FormField from "./FormField";
 import { useRouter } from "next/navigation";
 import { auth } from "@/firebase/client";
-import { signIn, signUp } from "@/lib/constant/auth.action";
+import { signIn, signUp } from "@/lib/actions/auth.action";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { useState } from "react";
 

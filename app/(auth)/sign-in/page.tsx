@@ -1,5 +1,5 @@
 import AuthForm from '@/components/AuthForm'
-import { isAuthenticated } from '@/lib/constant/auth.action'
+import { isAuthenticated } from '@/lib/actions/auth.action'
 import { redirect } from 'next/navigation';
 import React from 'react'
 
