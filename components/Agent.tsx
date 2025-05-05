@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import {vapi} from '@/lib/vapi.sdk'
+import { interviewer } from '@/public/constants';
 
 
 enum CallStatus{
@@ -19,12 +20,12 @@ interface SavedMessage {
     content: string;
 }
 
-const Agent = ({userName, userId, type}: AgentProps) => {
+const Agent = ({userName, userId, type, interviewId, questions}: AgentProps) => {
     const router = useRouter();
 
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [callStatus, setCallStatus] = useState<CallStatus>(CallStatus.INACTIVE);
-    const [message, setMessage] = useState<SavedMessage[]>([])
+    const [messages, setMessage] = useState<SavedMessage[]>([])
 
    
     useEffect(() => {
@@ -64,21 +65,61 @@ const Agent = ({userName, userId, type}: AgentProps) => {
 
     }, [])
 
+    const handleGenerateFeedback = async (messages: SavedMessage[]) => {
+        console.log('Generate Feedback here.');
+
+        //TODO: Create a server action that generates feedback
+        const {success, id} = {
+            success: true,
+            id: 'feedback-id'
+        }
+
+        if(success && id){
+            router.push(`/interview/${interviewId}/feedback`);
+        } else{
+            console.log('Error saving feedback');
+            //? Check the below line
+            console.log(messages);
+            router.push('/');
+        }
+    }
+
     //**This second UseEffect show changes in some arguments, then do some reflective change on UI
     useEffect(() => {
+        if(type === 'generate'){
+            router.push('/')
+        } else{
+            handleGenerateFeedback(messages);
+        }
         if(callStatus === CallStatus.FINISHED) router.push('/');
 
-    }, [message, callStatus, type, userId]);
+    }, [messages, callStatus, type, userId]);
 
     const handleCall = async () => {
         setCallStatus(CallStatus.CONNECTING);
 
-        await vapi.start(process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID!, {
-            variableValues: {
-                username: userName,
-                userid: userId
+        if(type === 'generate'){            
+            await vapi.start(process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID!, {
+                variableValues: {
+                    username: userName,
+                    userid: userId
+                }
+            })
+        } else{
+            let formattedQuestion = '';
+
+            if(questions){
+                formattedQuestion = questions
+                    .map((question) => `-${question}`)
+                    .join('\n');
             }
-        })
+
+            await vapi.start(interviewer, {
+                variableValues: {
+                    questions: formattedQuestion
+                }
+            })
+        }
     }
 
     const handleDisconnect = async () => {
@@ -87,7 +128,7 @@ const Agent = ({userName, userId, type}: AgentProps) => {
         vapi.stop();
     }
 
-    const lastestMessage = message[message.length - 1]?.content;
+    const lastestMessage = messages[messages.length - 1]?.content;
     const isCallInactiveorFinished = callStatus === CallStatus.INACTIVE || callStatus === CallStatus.FINISHED;
 
   return (
@@ -116,7 +157,7 @@ const Agent = ({userName, userId, type}: AgentProps) => {
                 </div>    
             </div>             
         </div>
-            {message.length > 0 && (
+            {messages.length > 0 && (
                 <div className='transcript-border'>
                     <div className='transcript'>
                         <p key={lastestMessage} className={cn
